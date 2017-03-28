@@ -23,7 +23,8 @@ public class CameraController : MonoBehaviour {
         UpdateAxisH();
         UpdateAxisV();
 
-        ResetCameraPosition();
+        CameraRotation1(0f, 0f);
+        transform.LookAt(target);
     }
 
 	// Update is called once per frame
@@ -38,19 +39,28 @@ public class CameraController : MonoBehaviour {
 
     void CameraRotation1(float mouseX, float mouseY) {
         rotationH = mouseX * ROTATION_SPEED;
-        rotationV += mouseY * ROTATION_SPEED;
+        rotationV = mouseY * ROTATION_SPEED;
 
-        ResetCameraPosition();
+        //ResetCameraPosition();
 
         UpdateAxisH();
-        /*Quaternion rotH = Quaternion.AngleAxis(rotationH, axisH);
-        axisV = rotH *axisV;*/
+        Quaternion rotH = Quaternion.AngleAxis(rotationH, axisH);
 
-        transform.RotateAround(target.position, axisH, rotationH);
-        // fromCameraToTarget is required for UpdateAxisV()
+        // Instead of updating axisV
+        axisV = rotH * axisV;
+        Quaternion rotV = Quaternion.AngleAxis(rotationV, axisV);
         fromCameraToTarget = transform.position - target.position;
-        UpdateAxisV();
-        transform.RotateAround(target.position, axisV, rotationV);
+
+        // Performing rotation
+        fromCameraToTarget = rotV * rotH * fromCameraToTarget;
+        transform.position = target.position + fromCameraToTarget;
+
+        // Instead of LookAt(target)
+        var q = Quaternion.FromToRotation(transform.localToWorldMatrix * new Vector4(0, 0, 1, 0), -fromCameraToTarget);
+        transform.rotation = q * transform.rotation;
+        var q2 = Quaternion.AngleAxis(transform.rotation.z, transform.localToWorldMatrix * new Vector4(0, 0, 1, 0));
+        transform.rotation = q2 * transform.rotation;
+
         fromCameraToTarget = transform.position - target.position;
     }
 
@@ -71,6 +81,6 @@ public class CameraController : MonoBehaviour {
 
     void FollowTarget() {
         transform.position = target.position + fromCameraToTarget.normalized * distance;
-        transform.LookAt(target);
+        //transform.LookAt(target);
     }
 }
